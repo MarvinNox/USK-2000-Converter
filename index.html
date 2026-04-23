@@ -78,6 +78,9 @@
         margin: 0;
         padding: 0;
       }
+      html {
+        scrollbar-width: thin;
+      }
       body {
         min-height: 100vh;
         font-family: Inter, system-ui, sans-serif;
@@ -514,6 +517,7 @@
                 type="number"
                 step="0.01"
                 placeholder="5402299.55"
+                required
               />
             </div>
             <div class="field">
@@ -524,6 +528,7 @@
                 type="number"
                 step="0.01"
                 placeholder="235596.77"
+                required
               />
             </div>
           </div>
@@ -533,7 +538,6 @@
               Конвертувати
             </button>
             <button class="btn" id="sampleBtn">Приклад</button>
-            <button class="btn" id="copyBtn">Копіювати lat, lon</button>
           </div>
 
           <div id="status" class="status"></div>
@@ -542,8 +546,8 @@
             <div class="helper-card">
               <strong>Порядок осей</strong>
               <span
-                >Введення: X = northing, Y = easting. Усередині proj4
-                перетворення виконується як [Y, X].</span
+                >Введення: X = northing, Y = easting.<br />
+                Усередині перетворення виконується як [Y, X].</span
               >
             </div>
             <div class="helper-card">
@@ -605,6 +609,7 @@
                 "
                 >Відкрити в Google Maps</a
               >
+              <button class="btn" id="copyBtn">Копіювати lat, lon</button>
             </div>
             <p class="footer-note">
               Карта нижче оновлюється після кожного розрахунку, а точка
@@ -961,22 +966,49 @@
         map.setView([lat, lon], 14, { animate: true });
       }
 
+      function isValidCoordinate(value, digitsBeforeDot) {
+        return new RegExp(`^\\d{${digitsBeforeDot}}(?:\\.\\d+)?$`).test(
+          value.trim(),
+        );
+      }
+
       function convert() {
         try {
           const zone = getSelectedZone();
           if (!zone) throw new Error("Оберіть зону МСК.");
-          const x = Number(els.xInput.value);
-          const y = Number(els.yInput.value);
-          if (!Number.isFinite(x) || !Number.isFinite(y)) {
-            throw new Error("Введіть коректні числові координати X та Y.");
+
+          const xRaw = els.xInput.value.trim();
+          const yRaw = els.yInput.value.trim();
+
+          if (!xRaw || !yRaw) {
+            throw new Error("Заповніть поля X і Y.");
           }
+
+          if (!isValidCoordinate(xRaw, 7)) {
+            throw new Error("X має містити до 7 цифр до крапки.");
+          }
+
+          if (!isValidCoordinate(yRaw, 6)) {
+            throw new Error("Y має містити до 6 цифр до крапки.");
+          }
+
+          const x = Number(xRaw);
+          const y = Number(yRaw);
+
+          if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            throw new Error("Поля X і Y мають містити коректні числа.");
+          }
+
           const [lon, lat] = proj4(`EPSG:${zone.epsg}`, "EPSG:4326", [y, x]);
+
           if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
             throw new Error("Не вдалося перетворити координати.");
           }
+
           const latFixed = lat.toFixed(6);
           const lonFixed = lon.toFixed(6);
           const mapsUrl = `https://www.google.com/maps?q=${latFixed},${lonFixed}`;
+
           lastResult = {
             zone,
             x,
@@ -986,6 +1018,7 @@
             mapsUrl,
             timestamp: new Date().toISOString(),
           };
+
           els.coordsBig.textContent = `${latFixed}, ${lonFixed}`;
           els.latOut.textContent = latFixed;
           els.lonOut.textContent = lonFixed;
@@ -1134,7 +1167,7 @@
         localStorage.removeItem("usk-session");
         els.zoneSearch.value = "";
         populateZones(ZONES);
-        els.zoneSelect.value = "МСК-80";
+        els.zoneSelect.value = "";
         els.xInput.value = "";
         els.yInput.value = "";
         lastResult = null;
