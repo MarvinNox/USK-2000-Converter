@@ -193,9 +193,9 @@
       }
       .hero-copy h2 {
         margin: 0 0 10px;
-        font-size: clamp(2.2rem, 5vw, 4.5rem);
-        line-height: 0.95;
-        letter-spacing: -0.04em;
+        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        line-height: 1;
+        letter-spacing: -0.02em;
       }
       .hero-copy p {
         margin: 0;
@@ -221,7 +221,7 @@
         margin-bottom: 6px;
       }
       .stat strong {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
       }
       .layout {
         display: grid;
@@ -347,29 +347,13 @@
         letter-spacing: -0.02em;
         word-break: break-word;
       }
-      .result-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-      }
-      .mini-card {
-        padding: 16px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        background: var(--surface-2);
-      }
-      .mini-card small {
-        display: block;
-        color: var(--muted);
-        margin-bottom: 8px;
-      }
       .mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-size: 0.95rem;
       }
       #map {
         width: 100%;
-        height: 520px;
+        height: 595px;
         border-radius: var(--radius-lg);
         overflow: hidden;
         border: 1px solid var(--border);
@@ -410,8 +394,7 @@
         .hero-stats {
           padding: 18px;
         }
-        .input-grid,
-        .result-grid {
+        .input-grid {
           grid-template-columns: 1fr;
         }
         .topbar {
@@ -468,7 +451,7 @@
           <div class="section-label">Координатний сервіс</div>
           <h2>Всі основні МСК зони України в одному інтерфейсі.</h2>
           <p>
-            Сайт включає 25+ місцевих систем координат УСК-2000 для областей
+            Сайт включає 26 місцевих систем координат УСК-2000 для областей
             України, перетворення X/Y у широту й довготу WGS84, карту для
             перевірки точки, а також експорт результатів у KML та CSV для GIS,
             Google Earth і польових задач.
@@ -557,6 +540,13 @@
                 автоматично зберігаються в localStorage браузера.</span
               >
             </div>
+            <div class="helper-card">
+              <strong>Автоматична мапа</strong>
+              <span>
+                Мапа оновлюється після кожного розрахунку, а точка підписується
+                назвою вибраної МСК зони.</span
+              >
+            </div>
           </div>
         </article>
 
@@ -566,32 +556,6 @@
             <div class="result-hero">
               <small>Google Maps / WGS84</small>
               <div id="coordsBig" class="coords-big">Ще немає розрахунку</div>
-            </div>
-            <div class="result-grid" style="margin-top: 16px">
-              <div class="mini-card">
-                <small>Широта</small>
-                <div id="latOut" class="mono">—</div>
-              </div>
-              <div class="mini-card">
-                <small>Довгота</small>
-                <div id="lonOut" class="mono">—</div>
-              </div>
-              <div class="mini-card">
-                <small>Google Maps URL</small>
-                <div id="mapsOut" class="mono">—</div>
-              </div>
-              <div class="mini-card">
-                <small>МСК зона</small>
-                <div id="zoneOut" class="mono">—</div>
-              </div>
-              <div class="mini-card">
-                <small>EPSG</small>
-                <div id="epsgOut" class="mono">—</div>
-              </div>
-              <div class="mini-card">
-                <small>Область</small>
-                <div id="regionOut" class="mono">—</div>
-              </div>
             </div>
             <div class="exports">
               <button class="btn" id="downloadCsvBtn">Завантажити CSV</button>
@@ -611,10 +575,6 @@
               >
               <button class="btn" id="copyBtn">Копіювати lat, lon</button>
             </div>
-            <p class="footer-note">
-              Карта нижче оновлюється після кожного розрахунку, а точка
-              підписується назвою вибраної МСК зони.
-            </p>
           </article>
 
           <article class="card map-wrap">
@@ -630,7 +590,7 @@
           msk: "МСК-01",
           region: "Автономна Республіка Крим",
           epsg: 9831,
-          lon0: 34.5,
+          lon0: 34.3,
           x0: 300000,
           y0: 0,
         },
@@ -638,7 +598,7 @@
           msk: "МСК-05",
           region: "Вінницька область",
           epsg: 9832,
-          lon0: 28.6666666666667,
+          lon0: 28.4,
           x0: 300000,
           y0: 0,
         },
@@ -646,7 +606,7 @@
           msk: "МСК-07",
           region: "Волинська область",
           epsg: 9833,
-          lon0: 24.8333333333333,
+          lon0: 24.5,
           x0: 300000,
           y0: 0,
         },
@@ -851,11 +811,6 @@
         clearSessionBtn: document.getElementById("clearSessionBtn"),
         status: document.getElementById("status"),
         coordsBig: document.getElementById("coordsBig"),
-        latOut: document.getElementById("latOut"),
-        lonOut: document.getElementById("lonOut"),
-        mapsOut: document.getElementById("mapsOut"),
-        zoneOut: document.getElementById("zoneOut"),
-        epsgOut: document.getElementById("epsgOut"),
         regionOut: document.getElementById("regionOut"),
         openMapsBtn: document.getElementById("openMapsBtn"),
         zoneCount: document.getElementById("zoneCount"),
@@ -1020,12 +975,6 @@
           };
 
           els.coordsBig.textContent = `${latFixed}, ${lonFixed}`;
-          els.latOut.textContent = latFixed;
-          els.lonOut.textContent = lonFixed;
-          els.mapsOut.textContent = mapsUrl;
-          els.zoneOut.textContent = zone.msk;
-          els.epsgOut.textContent = `EPSG:${zone.epsg}`;
-          els.regionOut.textContent = zone.region;
           els.openMapsBtn.href = mapsUrl;
           updateMap(
             Number(latFixed),
@@ -1063,12 +1012,6 @@
           if (state.result) {
             lastResult = state.result;
             els.coordsBig.textContent = `${state.result.lat}, ${state.result.lon}`;
-            els.latOut.textContent = state.result.lat;
-            els.lonOut.textContent = state.result.lon;
-            els.mapsOut.textContent = state.result.mapsUrl;
-            els.zoneOut.textContent = state.result.zone.msk;
-            els.epsgOut.textContent = `EPSG:${state.result.zone.epsg}`;
-            els.regionOut.textContent = state.result.zone.region;
             els.openMapsBtn.href = state.result.mapsUrl;
             updateMap(
               Number(state.result.lat),
@@ -1172,12 +1115,6 @@
         els.yInput.value = "";
         lastResult = null;
         els.coordsBig.textContent = "Ще немає розрахунку";
-        els.latOut.textContent = "—";
-        els.lonOut.textContent = "—";
-        els.mapsOut.textContent = "—";
-        els.zoneOut.textContent = "—";
-        els.epsgOut.textContent = "—";
-        els.regionOut.textContent = "—";
         els.openMapsBtn.href = "#";
         if (marker) marker.remove();
         map.setView([49.0, 31.0], 6);
