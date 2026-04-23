@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="uk" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USK-2000 MSK Ukraine Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/proj4leaflet@1.0.2/src/proj4leaflet.js"
+      defer
+    ></script>
+
+    <style>
+      :root,
+      [data-theme="light"] {
+        --bg: #f7f6f2;
+        --surface: #faf8f4;
+        --surface-2: #f1eee8;
+        --surface-3: #e8e3da;
+        --text: #242019;
+        --muted: #6f6a61;
+        --faint: #9f9b93;
+        --border: rgba(36, 32, 25, 0.12);
+        --primary: #01696f;
+        --primary-hover: #0c4e54;
+        --primary-soft: rgba(1, 105, 111, 0.08);
+        --success: #2f6e2f;
+        --error: #a13544;
+        --radius-sm: 12px;
+        --radius-md: 18px;
+        --radius-lg: 26px;
+        --shadow: 0 16px 40px rgba(31, 27, 21, 0.08);
+        --shadow-soft: 0 6px 18px rgba(31, 27, 21, 0.05);
+      }
+      [data-theme="dark"] {
+        --bg: #171614;
+        --surface: #1c1b19;
+        --surface-2: #23211f;
+        --surface-3: #2c2926;
+        --text: #ece7df;
+        --muted: #aaa39a;
+        --faint: #7d786f;
+        --border: rgba(236, 231, 223, 0.12);
+        --primary: #5aa0a8;
+        --primary-hover: #7cbac1;
+        --primary-soft: rgba(90, 160, 168, 0.12);
+        --success: #7dc27d;
+        --error: #e97b86;
+        --shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+        --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.2);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        min-height: 100vh;
+        font-family: Inter, system-ui, sans-serif;
+        background:
+          radial-gradient(
+            circle at top left,
+            var(--primary-soft),
+            transparent 32%
+          ),
+          var(--bg);
+        color: var(--text);
+        line-height: 1.55;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      .shell {
+        max-width: 1380px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 18px 22px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(10px);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          color-mix(in srgb, var(--primary) 40%, white)
+        );
+        color: white;
+        box-shadow: var(--shadow-soft);
+        flex: 0 0 auto;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(1.35rem, 2.5vw, 2rem);
+        line-height: 1.05;
+      }
+      .brand p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+      .top-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        min-height: 46px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        padding: 0 16px;
+        cursor: pointer;
+        transition:
+          transform 0.16s ease,
+          background 0.16s ease,
+          border-color 0.16s ease;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        border-color: transparent;
+      }
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+      }
+      .hero-copy {
+        padding: 28px;
+      }
+      .hero-copy h2 {
+        margin: 0 0 10px;
+        font-size: clamp(2.2rem, 5vw, 4.5rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+      .hero-copy p {
+        margin: 0;
+        max-width: 62ch;
+        color: var(--muted);
+        font-size: 1.02rem;
+      }
+      .hero-stats {
+        padding: 24px;
+        display: grid;
+        gap: 14px;
+        align-content: center;
+      }
+      .stat {
+        padding: 18px;
+        border-radius: var(--radius-md);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+      }
+      .stat small {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .stat strong {
+        font-size: 1.4rem;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(360px, 470px) 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .panel {
+        padding: 24px;
+      }
+      .panel h3 {
+        margin: 0 0 16px;
+        font-size: 1.2rem;
+      }
+      .section-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--primary);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .field label {
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .field small {
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+      .control,
+      .input {
+        width: 100%;
+        min-height: 50px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        padding: 12px 14px;
+        outline: none;
+      }
+      .control:focus,
+      .input:focus {
+        border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+        box-shadow: 0 0 0 4px
+          color-mix(in srgb, var(--primary) 14%, transparent);
+      }
+      .input-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .helper-grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .helper-card {
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface-2);
+      }
+      .helper-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+      }
+      .helper-card span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .status {
+        margin-top: 16px;
+        min-height: 24px;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      .ok {
+        color: var(--success);
+      }
+      .error {
+        color: var(--error);
+      }
+      .results {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .result-hero {
+        padding: 22px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--primary) 16%, var(--surface)),
+          var(--surface-2)
+        );
+        border: 1px solid var(--border);
+      }
+      .result-hero small {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .coords-big {
+        font-size: clamp(1.3rem, 3vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        word-break: break-word;
+      }
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .mini-card {
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface-2);
+      }
+      .mini-card small {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.95rem;
+      }
+      #map {
+        width: 100%;
+        height: 520px;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .map-wrap {
+        padding: 16px;
+      }
+      .exports {
+        margin-top: 16px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .footer-note {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .zone-search {
+        margin-bottom: 12px;
+      }
+      @media (max-width: 1120px) {
+        .hero,
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        #map {
+          height: 420px;
+        }
+      }
+      @media (max-width: 720px) {
+        .shell {
+          padding: 14px;
+        }
+        .topbar,
+        .panel,
+        .hero-copy,
+        .hero-stats {
+          padding: 18px;
+        }
+        .input-grid,
+        .result-grid {
+          grid-template-columns: 1fr;
+        }
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .top-actions {
+          width: 100%;
+        }
+        .top-actions .btn {
+          flex: 1 1 140px;
+        }
+        #map {
+          height: 340px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="M4 18L10 6l4 8 2-4 4 8" />
+              <circle cx="10" cy="6" r="1.2" fill="currentColor"></circle>
+              <circle cx="20" cy="18" r="1.2" fill="currentColor"></circle>
+            </svg>
+          </div>
+          <div>
+            <h1>USK-2000 / МСК України</h1>
+            <p>
+              Конвертація локальних МСК зон у WGS84, Google Maps, KML та CSV.
+            </p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="btn" data-theme-toggle aria-label="Перемкнути тему">
+            🌙 Тема
+          </button>
+          <button class="btn" id="clearSessionBtn">Очистити сесію</button>
+        </div>
+      </section>
+
+      <section class="hero">
+        <article class="card hero-copy">
+          <div class="section-label">Координатний сервіс</div>
+          <h2>Всі основні МСК зони України в одному інтерфейсі.</h2>
+          <p>
+            Сайт включає 25+ місцевих систем координат УСК-2000 для областей
+            України, перетворення X/Y у широту й довготу WGS84, карту для
+            перевірки точки, а також експорт результатів у KML та CSV для GIS,
+            Google Earth і польових задач.
+          </p>
+        </article>
+        <aside class="card hero-stats">
+          <div class="stat">
+            <small>Кількість зон</small><strong id="zoneCount">0</strong>
+          </div>
+          <div class="stat">
+            <small>Формати експорту</small><strong>KML + CSV</strong>
+          </div>
+          <div class="stat">
+            <small>Сумісність</small><strong>Google Maps / Leaflet</strong>
+          </div>
+        </aside>
+      </section>
+
+      <section class="layout">
+        <article class="card panel">
+          <div class="section-label">Вхідні дані</div>
+          <h3>Параметри перетворення</h3>
+
+          <div class="field zone-search">
+            <label for="zoneSearch">Пошук області або коду МСК</label>
+            <input
+              id="zoneSearch"
+              class="input"
+              type="text"
+              placeholder="Наприклад: МСК-05, Вінницька, Одеська"
+            />
+          </div>
+
+          <div class="field">
+            <label for="zoneSelect">Зона МСК</label>
+            <select id="zoneSelect" class="control"></select>
+            <small id="zoneMeta">—</small>
+          </div>
+
+          <div class="input-grid">
+            <div class="field">
+              <label for="xInput">X (northing)</label>
+              <input
+                id="xInput"
+                class="input"
+                type="number"
+                step="0.01"
+                placeholder="5402299.55"
+              />
+            </div>
+            <div class="field">
+              <label for="yInput">Y (easting)</label>
+              <input
+                id="yInput"
+                class="input"
+                type="number"
+                step="0.01"
+                placeholder="235596.77"
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn btn-primary" id="convertBtn">
+              Конвертувати
+            </button>
+            <button class="btn" id="sampleBtn">Приклад</button>
+            <button class="btn" id="copyBtn">Копіювати lat, lon</button>
+          </div>
+
+          <div id="status" class="status"></div>
+
+          <div class="helper-grid">
+            <div class="helper-card">
+              <strong>Порядок осей</strong>
+              <span
+                >Введення: X = northing, Y = easting. Усередині proj4
+                перетворення виконується як [Y, X].</span
+              >
+            </div>
+            <div class="helper-card">
+              <strong>Збереження сесії</strong>
+              <span
+                >Вибрана зона, координати, тема та останній результат
+                автоматично зберігаються в localStorage браузера.</span
+              >
+            </div>
+          </div>
+        </article>
+
+        <section class="results">
+          <article class="card panel">
+            <div class="section-label">Результат</div>
+            <div class="result-hero">
+              <small>Google Maps / WGS84</small>
+              <div id="coordsBig" class="coords-big">Ще немає розрахунку</div>
+            </div>
+            <div class="result-grid" style="margin-top: 16px">
+              <div class="mini-card">
+                <small>Широта</small>
+                <div id="latOut" class="mono">—</div>
+              </div>
+              <div class="mini-card">
+                <small>Довгота</small>
+                <div id="lonOut" class="mono">—</div>
+              </div>
+              <div class="mini-card">
+                <small>Google Maps URL</small>
+                <div id="mapsOut" class="mono">—</div>
+              </div>
+              <div class="mini-card">
+                <small>МСК зона</small>
+                <div id="zoneOut" class="mono">—</div>
+              </div>
+              <div class="mini-card">
+                <small>EPSG</small>
+                <div id="epsgOut" class="mono">—</div>
+              </div>
+              <div class="mini-card">
+                <small>Область</small>
+                <div id="regionOut" class="mono">—</div>
+              </div>
+            </div>
+            <div class="exports">
+              <button class="btn" id="downloadCsvBtn">Завантажити CSV</button>
+              <button class="btn" id="downloadKmlBtn">Завантажити KML</button>
+              <a
+                class="btn"
+                id="openMapsBtn"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  text-decoration: none;
+                "
+                >Відкрити в Google Maps</a
+              >
+            </div>
+            <p class="footer-note">
+              Карта нижче оновлюється після кожного розрахунку, а точка
+              підписується назвою вибраної МСК зони.
+            </p>
+          </article>
+
+          <article class="card map-wrap">
+            <div id="map" aria-label="Карта з точкою результату"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const ZONES = [
+        {
+          msk: "МСК-01",
+          region: "Автономна Республіка Крим",
+          epsg: 9831,
+          lon0: 34.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-05",
+          region: "Вінницька область",
+          epsg: 9832,
+          lon0: 28.6666666666667,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-07",
+          region: "Волинська область",
+          epsg: 9833,
+          lon0: 24.8333333333333,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-12",
+          region: "Дніпропетровська область",
+          epsg: 9834,
+          lon0: 34.833333333333,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-14",
+          region: "Донецька область",
+          epsg: 9835,
+          lon0: 38.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-18",
+          region: "Житомирська область",
+          epsg: 9836,
+          lon0: 28.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-21",
+          region: "Закарпатська область",
+          epsg: 9837,
+          lon0: 24.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-23",
+          region: "Запорізька область",
+          epsg: 9838,
+          lon0: 36.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-26",
+          region: "Івано-Франківська область",
+          epsg: 9839,
+          lon0: 24.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-32",
+          region: "Київська область",
+          epsg: 9821,
+          lon0: 30.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-35",
+          region: "Кіровоградська область",
+          epsg: 9840,
+          lon0: 32.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-44",
+          region: "Луганська область",
+          epsg: 9841,
+          lon0: 39.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-46",
+          region: "Львівська область",
+          epsg: 9851,
+          lon0: 24.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-48",
+          region: "Миколаївська область",
+          epsg: 9852,
+          lon0: 31.833333,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-51",
+          region: "Одеська область",
+          epsg: 9853,
+          lon0: 30.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-53",
+          region: "Полтавська область",
+          epsg: 9854,
+          lon0: 34.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-56",
+          region: "Рівненська область",
+          epsg: 9855,
+          lon0: 27.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-59",
+          region: "Сумська область",
+          epsg: 9856,
+          lon0: 34.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-61",
+          region: "Тернопільська область",
+          epsg: 9857,
+          lon0: 25.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-63",
+          region: "Харківська область",
+          epsg: 9858,
+          lon0: 36.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-65",
+          region: "Херсонська область",
+          epsg: 9859,
+          lon0: 33.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-68",
+          region: "Хмельницька область",
+          epsg: 9860,
+          lon0: 27.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-71",
+          region: "Черкаська область",
+          epsg: 9861,
+          lon0: 31.5,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-73",
+          region: "Чернівецька область",
+          epsg: 9862,
+          lon0: 26.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-74",
+          region: "Чернігівська область",
+          epsg: 9863,
+          lon0: 32.0,
+          x0: 300000,
+          y0: 0,
+        },
+        {
+          msk: "МСК-80",
+          region: "м. Київ",
+          epsg: 9864,
+          lon0: 30.5,
+          x0: 300000,
+          y0: 0,
+        },
+      ];
+
+      const els = {
+        themeToggle: document.querySelector("[data-theme-toggle]"),
+        zoneSelect: document.getElementById("zoneSelect"),
+        zoneSearch: document.getElementById("zoneSearch"),
+        zoneMeta: document.getElementById("zoneMeta"),
+        xInput: document.getElementById("xInput"),
+        yInput: document.getElementById("yInput"),
+        convertBtn: document.getElementById("convertBtn"),
+        sampleBtn: document.getElementById("sampleBtn"),
+        copyBtn: document.getElementById("copyBtn"),
+        downloadCsvBtn: document.getElementById("downloadCsvBtn"),
+        downloadKmlBtn: document.getElementById("downloadKmlBtn"),
+        clearSessionBtn: document.getElementById("clearSessionBtn"),
+        status: document.getElementById("status"),
+        coordsBig: document.getElementById("coordsBig"),
+        latOut: document.getElementById("latOut"),
+        lonOut: document.getElementById("lonOut"),
+        mapsOut: document.getElementById("mapsOut"),
+        zoneOut: document.getElementById("zoneOut"),
+        epsgOut: document.getElementById("epsgOut"),
+        regionOut: document.getElementById("regionOut"),
+        openMapsBtn: document.getElementById("openMapsBtn"),
+        zoneCount: document.getElementById("zoneCount"),
+      };
+
+      let map,
+        marker,
+        lastResult = null;
+
+      function initTheme() {
+        const saved = localStorage.getItem("usk-theme");
+        const systemDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        const theme = saved || (systemDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+        updateThemeButton(theme);
+        els.themeToggle.addEventListener("click", () => {
+          const current =
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "dark"
+              : "light";
+          const next = current === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem("usk-theme", next);
+          updateThemeButton(next);
+        });
+      }
+
+      function updateThemeButton(theme) {
+        els.themeToggle.textContent = theme === "dark" ? "☀️ Тема" : "🌙 Тема";
+      }
+
+      function initProjDefs() {
+        // WGS84
+        proj4.defs(
+          "EPSG:4326",
+          "+proj=longlat +datum=WGS84 +no_defs +type=crs",
+        );
+
+        for (const zone of ZONES) {
+          // Перевіряємо, що zone має y0
+          const y0 = zone.y0 !== undefined ? zone.y0 : 0;
+
+          const def = `
+      +proj=tmerc
+      +lat_0=0
+      +lon_0=${zone.lon0}
+      +k=1
+      +x_0=${zone.x0}
+      +y_0=${y0}
+      +ellps=krass
+      +towgs84=24,-121,-76,0,0,0,0
+      +units=m
+      +no_defs
+      +type=crs
+    `
+            .replace(/\s+/g, " ")
+            .trim();
+
+          proj4.defs(`EPSG:${zone.epsg}`, def);
+        }
+      }
+
+      function populateZones(list = ZONES) {
+        const current = els.zoneSelect.value;
+        els.zoneSelect.innerHTML = "";
+        list.forEach((zone) => {
+          const option = document.createElement("option");
+          option.value = zone.msk;
+          option.textContent = `${zone.msk} — ${zone.region}`;
+          els.zoneSelect.appendChild(option);
+        });
+        if (list.some((z) => z.msk === current)) els.zoneSelect.value = current;
+        updateZoneMeta();
+      }
+
+      function updateZoneMeta() {
+        const zone = getSelectedZone();
+        if (!zone) {
+          els.zoneMeta.textContent = "Нічого не знайдено.";
+          return;
+        }
+        els.zoneMeta.textContent = `${zone.region} · EPSG:${zone.epsg} · lon_0=${zone.lon0}° · false easting=${zone.x0} м`;
+      }
+
+      function getSelectedZone() {
+        return ZONES.find((z) => z.msk === els.zoneSelect.value) || null;
+      }
+
+      function setStatus(text, type = "") {
+        els.status.className = `status ${type}`;
+        els.status.textContent = text;
+      }
+
+      function initMap() {
+        map = L.map("map", { zoomControl: true }).setView([49.0, 31.0], 6);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(map);
+      }
+
+      function updateMap(lat, lon, label) {
+        if (!map) return;
+        if (marker) marker.remove();
+        marker = L.marker([lat, lon]).addTo(map).bindPopup(label).openPopup();
+        map.setView([lat, lon], 14, { animate: true });
+      }
+
+      function convert() {
+        try {
+          const zone = getSelectedZone();
+          if (!zone) throw new Error("Оберіть зону МСК.");
+          const x = Number(els.xInput.value);
+          const y = Number(els.yInput.value);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            throw new Error("Введіть коректні числові координати X та Y.");
+          }
+          const [lon, lat] = proj4(`EPSG:${zone.epsg}`, "EPSG:4326", [y, x]);
+          if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            throw new Error("Не вдалося перетворити координати.");
+          }
+          const latFixed = lat.toFixed(6);
+          const lonFixed = lon.toFixed(6);
+          const mapsUrl = `https://www.google.com/maps?q=${latFixed},${lonFixed}`;
+          lastResult = {
+            zone,
+            x,
+            y,
+            lat: latFixed,
+            lon: lonFixed,
+            mapsUrl,
+            timestamp: new Date().toISOString(),
+          };
+          els.coordsBig.textContent = `${latFixed}, ${lonFixed}`;
+          els.latOut.textContent = latFixed;
+          els.lonOut.textContent = lonFixed;
+          els.mapsOut.textContent = mapsUrl;
+          els.zoneOut.textContent = zone.msk;
+          els.epsgOut.textContent = `EPSG:${zone.epsg}`;
+          els.regionOut.textContent = zone.region;
+          els.openMapsBtn.href = mapsUrl;
+          updateMap(
+            Number(latFixed),
+            Number(lonFixed),
+            `${zone.msk} — ${zone.region}<br>${latFixed}, ${lonFixed}`,
+          );
+          setStatus("Координати успішно перетворено.", "ok");
+          persistSession();
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      }
+
+      function persistSession() {
+        const state = {
+          zone: els.zoneSelect.value,
+          search: els.zoneSearch.value,
+          x: els.xInput.value,
+          y: els.yInput.value,
+          result: lastResult,
+        };
+        localStorage.setItem("usk-session", JSON.stringify(state));
+      }
+
+      function restoreSession() {
+        try {
+          const raw = localStorage.getItem("usk-session");
+          if (!raw) return;
+          const state = JSON.parse(raw);
+          if (state.zone) els.zoneSelect.value = state.zone;
+          if (state.search) els.zoneSearch.value = state.search;
+          if (state.x) els.xInput.value = state.x;
+          if (state.y) els.yInput.value = state.y;
+          updateZoneMeta();
+          if (state.result) {
+            lastResult = state.result;
+            els.coordsBig.textContent = `${state.result.lat}, ${state.result.lon}`;
+            els.latOut.textContent = state.result.lat;
+            els.lonOut.textContent = state.result.lon;
+            els.mapsOut.textContent = state.result.mapsUrl;
+            els.zoneOut.textContent = state.result.zone.msk;
+            els.epsgOut.textContent = `EPSG:${state.result.zone.epsg}`;
+            els.regionOut.textContent = state.result.zone.region;
+            els.openMapsBtn.href = state.result.mapsUrl;
+            updateMap(
+              Number(state.result.lat),
+              Number(state.result.lon),
+              `${state.result.zone.msk} — ${state.result.zone.region}<br>${state.result.lat}, ${state.result.lon}`,
+            );
+          }
+        } catch (_) {}
+      }
+
+      function filterZones() {
+        const q = els.zoneSearch.value.trim().toLowerCase();
+        if (!q) {
+          populateZones(ZONES);
+          persistSession();
+          return;
+        }
+        const filtered = ZONES.filter((zone) =>
+          `${zone.msk} ${zone.region}`.toLowerCase().includes(q),
+        );
+        populateZones(filtered.length ? filtered : ZONES);
+        persistSession();
+      }
+
+      function applySample() {
+        const sample = ZONES.find((z) => z.msk === "МСК-05");
+        els.zoneSelect.value = sample.msk;
+        els.xInput.value = "5402299.55";
+        els.yInput.value = "235596.77";
+        updateZoneMeta();
+        convert();
+      }
+
+      async function copyCoords() {
+        if (!lastResult) {
+          setStatus("Спочатку виконайте перетворення.", "error");
+          return;
+        }
+        const text = `${lastResult.lat}, ${lastResult.lon}`;
+        await navigator.clipboard.writeText(text);
+        setStatus("Координати скопійовано.", "ok");
+      }
+
+      function downloadBlob(filename, content, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function downloadCsv() {
+        if (!lastResult) {
+          setStatus("Немає результату для експорту.", "error");
+          return;
+        }
+        const csv = [
+          "msk,region,epsg,x,y,lat,lon,google_maps_url,timestamp",
+          [
+            lastResult.zone.msk,
+            `"${lastResult.zone.region}"`,
+            lastResult.zone.epsg,
+            lastResult.x,
+            lastResult.y,
+            lastResult.lat,
+            lastResult.lon,
+            `"${lastResult.mapsUrl}"`,
+            lastResult.timestamp,
+          ].join(","),
+        ].join("\n");
+        downloadBlob(
+          `usk2000-${lastResult.zone.msk.toLowerCase()}-${Date.now()}.csv`,
+          csv,
+          "text/csv;charset=utf-8",
+        );
+        setStatus("CSV завантажено.", "ok");
+      }
+
+      function downloadKml() {
+        if (!lastResult) {
+          setStatus("Немає результату для експорту.", "error");
+          return;
+        }
+        const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Document>\n    <name>${lastResult.zone.msk} ${lastResult.zone.region}</name>\n    <Placemark>\n      <name>${lastResult.zone.msk} — ${lastResult.zone.region}</name>\n      <description>X=${lastResult.x}, Y=${lastResult.y}, EPSG:${lastResult.zone.epsg}</description>\n      <Point>\n        <coordinates>${lastResult.lon},${lastResult.lat},0</coordinates>\n      </Point>\n    </Placemark>\n  </Document>\n</kml>`;
+        downloadBlob(
+          `usk2000-${lastResult.zone.msk.toLowerCase()}-${Date.now()}.kml`,
+          kml,
+          "application/vnd.google-earth.kml+xml;charset=utf-8",
+        );
+        setStatus("KML завантажено.", "ok");
+      }
+
+      function clearSession() {
+        localStorage.removeItem("usk-session");
+        els.zoneSearch.value = "";
+        populateZones(ZONES);
+        els.zoneSelect.value = "МСК-80";
+        els.xInput.value = "";
+        els.yInput.value = "";
+        lastResult = null;
+        els.coordsBig.textContent = "Ще немає розрахунку";
+        els.latOut.textContent = "—";
+        els.lonOut.textContent = "—";
+        els.mapsOut.textContent = "—";
+        els.zoneOut.textContent = "—";
+        els.epsgOut.textContent = "—";
+        els.regionOut.textContent = "—";
+        els.openMapsBtn.href = "#";
+        if (marker) marker.remove();
+        map.setView([49.0, 31.0], 6);
+        setStatus("Сесію очищено.", "ok");
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        els.zoneCount.textContent = ZONES.length;
+        initTheme();
+        initProjDefs();
+        populateZones(ZONES);
+        initMap();
+        restoreSession();
+        if (!els.xInput.value && !els.yInput.value) {
+          els.zoneSelect.value = "МСК-80";
+          updateZoneMeta();
+        }
+
+        els.zoneSelect.addEventListener("change", () => {
+          updateZoneMeta();
+          persistSession();
+        });
+        els.zoneSearch.addEventListener("input", filterZones);
+        els.xInput.addEventListener("input", persistSession);
+        els.yInput.addEventListener("input", persistSession);
+        els.convertBtn.addEventListener("click", convert);
+        els.sampleBtn.addEventListener("click", applySample);
+        els.copyBtn.addEventListener("click", copyCoords);
+        els.downloadCsvBtn.addEventListener("click", downloadCsv);
+        els.downloadKmlBtn.addEventListener("click", downloadKml);
+        els.clearSessionBtn.addEventListener("click", clearSession);
+      });
+    </script>
+  </body>
+</html>
